@@ -3,6 +3,8 @@ resolver = "2"
 members = [
     "crates/steward-core",
     "crates/steward-proto",
+    "crates/steward-policy",
+    "crates/steward-audit",
 ]
 
 [workspace.package]
@@ -23,6 +25,13 @@ serde_json = "1"
 schemars = "0.8"
 thiserror = "2"
 async-trait = "0.1"
+blake3 = "1"
+ed25519-dalek = "2"
+hex = "0.4"
+
+# First-party crates referenced across the workspace.
+steward-core = { path = "crates/steward-core" }
+steward-proto = { path = "crates/steward-proto" }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

@@ -1,0 +1,17 @@
+[package]
+name = "steward-policy"
+description = "The allow/deny authorization engine for Gravital-Steward operations."
+license = "AGPL-3.0-or-later"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+readme.workspace = true
+
+[dependencies]
+steward-core = { workspace = true }
+
+[lints]
+workspace = true
