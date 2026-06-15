@@ -54,8 +54,9 @@ read-only operation, with every action signed in the audit log.
 
 - ☑ `steward-state` — embedded store (`redb`): tokens, revocation list,
   checkpoints, audit head. (RFC-0004)
-- ☐ `steward-auth` — Biscuit capability tokens: issue, present, validate,
-  attenuate, revoke/expire; lifecycle CLI surface.
+- ◐ `steward-auth` — Biscuit capability tokens: issue, present, validate,
+  attenuate (expiry), revoke/expire. Capability/server-narrowing attenuation and
+  the CLI surface are follow-up work. (RFC-0005)
 - ☑ `steward-policy` — allow/deny engine: capability superset check, max-risk
   check, explicit denies, fail-closed default. (RFC-0002)
 - ☑ `steward-audit` — append-only, BLAKE3 hash-chained, Ed25519-signed log;

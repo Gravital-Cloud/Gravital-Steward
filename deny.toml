@@ -8,9 +8,15 @@
 [advisories]
 version = 2
 yanked = "deny"
-# Empty by default; add advisory IDs here only with a documented justification
-# and a tracking issue.
-ignore = []
+# Add advisory IDs here only with a documented justification and a tracking issue.
+ignore = [
+    # RUSTSEC-2026-0173: proc-macro-error2 is unmaintained. It is a build-time-only
+    # proc-macro helper pulled transitively through biscuit-quote -> biscuit-auth
+    # (the datalog macros). biscuit-auth 6.0 cannot build with that feature
+    # disabled (an upstream bug), and no upgrade is available. Not a vulnerability;
+    # no runtime impact. Tracked in issue #13; revisit when biscuit-auth updates.
+    "RUSTSEC-2026-0173",
+]
 
 [licenses]
 version = 2

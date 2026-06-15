@@ -1,0 +1,24 @@
+[package]
+name = "steward-auth"
+description = "Biscuit capability tokens for Gravital-Steward: issue, verify, attenuate."
+license = "AGPL-3.0-or-later"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+readme.workspace = true
+
+[dependencies]
+steward-core = { workspace = true }
+steward-policy = { workspace = true }
+thiserror = { workspace = true }
+# Note: biscuit-auth 6.0 cannot build with `datalog-macro` disabled (an upstream
+# bug imports `ToAnyParam` unconditionally), so we keep default features. That
+# pulls the unmaintained `proc-macro-error2` transitively; see the documented
+# advisory ignore in deny.toml and the tracking issue.
+biscuit-auth = "6"
+
+[lints]
+workspace = true
