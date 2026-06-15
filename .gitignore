@@ -1,0 +1,20 @@
+# Rust build artifacts
+/target
+**/*.rs.bk
+*.pdb
+
+# Cargo lock is committed for the workspace (binary crates); keep it tracked.
+
+# Local environment / secrets — never commit
+.env
+.env.*
+*.pem
+*.key
+steward.state/
+*.local.toml
+
+# Editor / OS noise
+.idea/
+.vscode/
+*.swp
+.DS_Store
