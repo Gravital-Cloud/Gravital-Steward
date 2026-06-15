@@ -6,6 +6,7 @@ members = [
     "crates/steward-policy",
     "crates/steward-audit",
     "crates/steward-state",
+    "crates/steward-auth",
 ]
 
 [workspace.package]
@@ -30,11 +31,13 @@ blake3 = "1"
 ed25519-dalek = "2"
 hex = "0.4"
 redb = "2"
+biscuit-auth = "6"
 
 # First-party crates referenced across the workspace. A version is pinned (not
 # just a path) so cargo-deny does not treat them as wildcard dependencies.
 steward-core = { path = "crates/steward-core", version = "0.0.0" }
 steward-proto = { path = "crates/steward-proto", version = "0.0.0" }
+steward-policy = { path = "crates/steward-policy", version = "0.0.0" }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

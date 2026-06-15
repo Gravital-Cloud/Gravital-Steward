@@ -1,0 +1,20 @@
+[package]
+name = "steward-auth"
+description = "Biscuit capability tokens for Gravital-Steward: issue, verify, attenuate."
+license = "AGPL-3.0-or-later"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+readme.workspace = true
+
+[dependencies]
+steward-core = { workspace = true }
+steward-policy = { workspace = true }
+thiserror = { workspace = true }
+biscuit-auth = "6"
+
+[lints]
+workspace = true
