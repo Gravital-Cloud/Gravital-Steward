@@ -1,16 +1,15 @@
 name: PR Description
 
-# Generates a concise change descriptor for a pull request from its commits.
+# Auto-generates a detailed, structured description in the pull-request *body*
+# from the branch's commits, and keeps the *title* within GitHub's 256-character
+# limit (the title is what rejects PR creation when it is too long; the body
+# accepts up to ~65k characters).
 #
-# Deterministic and dependency-free. The generated description is hard-capped at
-# MAX_DESCRIPTION_CHARS (256) characters: GitHub enforces a 256-character limit
-# on the pull-request *title*, and this project applies the same ceiling to the
-# auto-generated body so PR creation can never fail on length. Raise the constant
-# in the script below to allow longer descriptions.
-#
-# To avoid clobbering a human-written description, the workflow only writes when
-# the PR body is empty or was previously written by this workflow (detected via
-# the marker). It does not run on 'edited' events, so its own update never loops.
+# The generated body groups changes by Conventional Commit type and lists any
+# referenced issues (resolved or related) with their titles and state. It is
+# deterministic and dependency-free. Author-written text above the marker is
+# preserved; the workflow does not run on 'edited' events, so its own update
+# never loops.
 
 on:
   pull_request:
@@ -18,6 +17,7 @@ on:
 
 permissions:
   contents: read
+  issues: read
   pull-requests: write
 
 concurrency:
@@ -32,65 +32,117 @@ jobs:
       - uses: actions/github-script@v7
         with:
           script: |
-            const MAX_DESCRIPTION_CHARS = 256; // GitHub PR title limit; applied here to the body.
+            const TITLE_MAX = 256;       // GitHub hard limit on the PR title.
+            const BODY_MAX = 60000;      // Safety ceiling; GitHub allows ~65k.
             const marker = '<!-- auto-descriptor -->';
             const { owner, repo } = context.repo;
-            const number = context.payload.pull_request.number;
-            const current = context.payload.pull_request.body || '';
+            const pr = context.payload.pull_request;
+            const number = pr.number;
 
-            // Respect a human-authored body: only write when empty or bot-owned.
-            if (current.trim() !== '' && !current.includes(marker)) {
-              core.info('PR has a human-written body; leaving it untouched.');
-              return;
+            // 1) Keep the title within the limit (truncate defensively).
+            if (pr.title && pr.title.length > TITLE_MAX) {
+              const title = pr.title.slice(0, TITLE_MAX - 1).replace(/\s+\S*$/, '') + '…';
+              await github.rest.pulls.update({ owner, repo, pull_number: number, title });
+              core.info(`Truncated title to ${title.length} chars.`);
             }
 
+            // 2) Gather commits.
             const commits = await github.paginate(
               github.rest.pulls.listCommits,
               { owner, repo, pull_number: number, per_page: 100 }
             );
 
-            // Strip the Conventional Commit type/scope prefix to get a readable summary.
-            const re = /^(\w+)(?:\([^)]+\))?(?:!)?:\s*(.+)$/;
-            const summaries = [];
+            const groups = {
+              feat: { title: 'Features', items: [] },
+              fix: { title: 'Fixes', items: [] },
+              perf: { title: 'Performance', items: [] },
+              refactor: { title: 'Refactoring', items: [] },
+              docs: { title: 'Documentation', items: [] },
+              test: { title: 'Tests', items: [] },
+              build: { title: 'Build', items: [] },
+              ci: { title: 'CI', items: [] },
+              chore: { title: 'Chores', items: [] },
+              other: { title: 'Other', items: [] },
+            };
+
+            // Collect issue references across all commit messages.
+            const closeRe = /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)/gi;
+            const refRe = /(?:^|[^\w])#(\d+)\b/g;
+            const resolves = new Set();
+            const related = new Set();
+
+            const subjectRe = /^(\w+)(?:\(([^)]+)\))?(!)?:\s*(.+)$/;
             for (const c of commits) {
-              const subject = c.commit.message.split('\n')[0].trim();
-              const m = subject.match(re);
-              summaries.push(m ? m[2] : subject);
+              const msg = c.commit.message;
+              const subject = msg.split('\n')[0].trim();
+              const m = subject.match(subjectRe);
+              if (m && groups[m[1]]) {
+                const scope = m[2] ? `**${m[2]}**: ` : '';
+                const bang = m[3] ? ' (breaking)' : '';
+                groups[m[1]].items.push(`${scope}${m[4]}${bang}`);
+              } else {
+                groups.other.items.push(subject);
+              }
+              let mm;
+              while ((mm = closeRe.exec(msg)) !== null) resolves.add(Number(mm[1]));
+              while ((mm = refRe.exec(msg)) !== null) related.add(Number(mm[1]));
+            }
+            for (const n of resolves) related.delete(n);
+
+            // Resolve issue titles/state for a richer "Issues" section.
+            async function describeIssue(n) {
+              try {
+                const { data } = await github.rest.issues.get({ owner, repo, issue_number: n });
+                const kind = data.pull_request ? 'PR' : 'issue';
+                return `#${n} — ${data.title} (${kind}, ${data.state})`;
+              } catch {
+                return `#${n}`;
+              }
             }
 
-            // De-duplicate while preserving order.
-            const seen = new Set();
-            const unique = summaries.filter((s) => {
-              const k = s.toLowerCase();
-              if (seen.has(k)) return false;
-              seen.add(k);
-              return true;
-            });
+            // 3) Build the body.
+            const out = [marker, '', '## Summary', ''];
+            out.push(`This pull request contains ${commits.length} commit(s).`, '');
 
-            const lead = `${commits.length} commit(s): `;
-            let joined = unique.join('; ');
-            if (joined.length > 0) joined = joined[0].toUpperCase() + joined.slice(1);
-            let text = `${lead}${joined}.`;
-
-            // Hard cap, truncating on a word boundary with an ellipsis. The marker
-            // is appended after the cap and does not count against readable text.
-            const budget = MAX_DESCRIPTION_CHARS - marker.length - 1; // 1 for the newline
-            if (text.length > budget) {
-              let cut = text.slice(0, budget - 1);
-              const lastSpace = cut.lastIndexOf(' ');
-              if (lastSpace > budget * 0.5) cut = cut.slice(0, lastSpace);
-              text = `${cut.replace(/[\s;,.]+$/, '')}…`;
+            for (const key of Object.keys(groups)) {
+              const g = groups[key];
+              if (g.items.length === 0) continue;
+              out.push(`### ${g.title}`);
+              for (const item of g.items) out.push(`- ${item}`);
+              out.push('');
             }
 
-            const newBody = `${text}\n${marker}`;
-            if (newBody.length > MAX_DESCRIPTION_CHARS) {
-              core.setFailed(`Generated description ${newBody.length} > ${MAX_DESCRIPTION_CHARS} chars.`);
-              return;
+            if (resolves.size > 0 || related.size > 0) {
+              out.push('## Issues', '');
+              if (resolves.size > 0) {
+                out.push('### Resolved by this PR');
+                for (const n of [...resolves].sort((a, b) => a - b)) {
+                  out.push(`- Closes ${await describeIssue(n)}`);
+                }
+                out.push('');
+              }
+              if (related.size > 0) {
+                out.push('### Related');
+                for (const n of [...related].sort((a, b) => a - b)) {
+                  out.push(`- ${await describeIssue(n)}`);
+                }
+                out.push('');
+              }
             }
+
+            out.push('---', '_Generated from commit messages. Edit text above the marker to add context._');
+            let generated = out.join('\n');
+            if (generated.length > BODY_MAX) generated = generated.slice(0, BODY_MAX - 1) + '…';
+
+            // 4) Preserve any author-written content above the marker.
+            const current = pr.body || '';
+            const idx = current.indexOf(marker);
+            const prefix = idx >= 0 ? current.slice(0, idx) : (current ? current + '\n\n' : '');
+            const newBody = `${prefix}${generated}`;
+
             if (newBody.trim() === current.trim()) {
-              core.info('PR description already up to date.');
+              core.info('PR body already up to date.');
               return;
             }
-
             await github.rest.pulls.update({ owner, repo, pull_number: number, body: newBody });
             core.info(`Updated PR description (${newBody.length} chars).`);
