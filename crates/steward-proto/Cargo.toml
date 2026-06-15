@@ -1,0 +1,19 @@
+[package]
+name = "steward-proto"
+description = "Wire protocol types for Gravital-Steward: structured errors, manifests and audit events."
+license = "Apache-2.0"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+readme.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+schemars = { workspace = true }
+
+[lints]
+workspace = true
