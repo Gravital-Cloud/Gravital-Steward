@@ -1,0 +1,91 @@
+name: PR Description
+
+# Generates a structured pull-request description from the branch's commits.
+# Deterministic and dependency-free: it groups Conventional Commit messages by
+# type and writes a summary into a marked section of the PR body, preserving any
+# text the author wrote above the marker.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: pr-description-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  describe:
+    runs-on: ubuntu-latest
+    # Skip when the edit was the bot updating the body itself, to avoid loops.
+    if: github.event.sender.type != 'Bot'
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const marker = '<!-- pr-description:auto -->';
+            const { owner, repo } = context.repo;
+            const number = context.payload.pull_request.number;
+
+            // Collect all commits on the PR (paginated).
+            const commits = await github.paginate(
+              github.rest.pulls.listCommits,
+              { owner, repo, pull_number: number, per_page: 100 }
+            );
+
+            const groups = {
+              feat: { title: 'Features', items: [] },
+              fix: { title: 'Fixes', items: [] },
+              perf: { title: 'Performance', items: [] },
+              refactor: { title: 'Refactoring', items: [] },
+              docs: { title: 'Documentation', items: [] },
+              test: { title: 'Tests', items: [] },
+              build: { title: 'Build', items: [] },
+              ci: { title: 'CI', items: [] },
+              chore: { title: 'Chores', items: [] },
+              other: { title: 'Other', items: [] },
+            };
+
+            const re = /^(\w+)(?:\(([^)]+)\))?(!)?:\s*(.+)$/;
+            for (const c of commits) {
+              const subject = c.commit.message.split('\n')[0];
+              const m = subject.match(re);
+              if (m && groups[m[1]]) {
+                const scope = m[2] ? `**${m[2]}**: ` : '';
+                groups[m[1]].items.push(`${scope}${m[4]}`);
+              } else {
+                groups.other.items.push(subject);
+              }
+            }
+
+            let body = [`${marker}`, '', '## Summary', ''];
+            body.push(`This pull request contains ${commits.length} commit(s).`, '');
+            let any = false;
+            for (const key of Object.keys(groups)) {
+              const g = groups[key];
+              if (g.items.length === 0) continue;
+              any = true;
+              body.push(`### ${g.title}`);
+              for (const item of g.items) body.push(`- ${item}`);
+              body.push('');
+            }
+            if (!any) body.push('_No conventional-commit entries found._', '');
+            body.push('---', '_Generated from commit messages. Edit text above the marker to add context._');
+            const generated = body.join('\n');
+
+            // Preserve any author-written content above the marker.
+            const current = context.payload.pull_request.body || '';
+            const idx = current.indexOf(marker);
+            const prefix = idx >= 0 ? current.slice(0, idx) : (current ? current + '\n\n' : '');
+            const newBody = `${prefix}${generated}`;
+
+            if (newBody.trim() === current.trim()) {
+              core.info('PR body already up to date.');
+              return;
+            }
+
+            await github.rest.pulls.update({ owner, repo, pull_number: number, body: newBody });
+            core.info('Updated PR description.');
