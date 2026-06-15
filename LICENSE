@@ -1,0 +1,23 @@
+# Licensing
+
+Gravital-Steward is dual-licensed by component. Each crate declares its license
+in its `Cargo.toml` `license` field; this file summarizes the split.
+
+| Component | License | File |
+|---|---|---|
+| Core runtime crates (`steward-core` and the execution crates) | AGPL-3.0-or-later | [LICENSE-AGPL](LICENSE-AGPL) |
+| Protocol and client SDK crates (`steward-proto`, `steward-sdk`) | Apache-2.0 | [LICENSE-APACHE](LICENSE-APACHE) |
+| Documentation and examples | Apache-2.0 | [LICENSE-APACHE](LICENSE-APACHE) |
+
+## Why this split
+
+- **AGPL-3.0-or-later for the core** protects the runtime against being offered
+  as a closed-source hosted service without contributing changes back.
+- **Apache-2.0 for the protocol and SDK** maximizes integrability: anyone can
+  build clients, agents and tooling against the wire protocol without copyleft
+  obligations.
+
+See [docs/adr/ADR-0002-licensing.md](docs/adr/ADR-0002-licensing.md) for the
+full rationale.
+
+Copyright (c) Angel Nereira and contributors.
