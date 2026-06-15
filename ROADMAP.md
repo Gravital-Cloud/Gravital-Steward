@@ -52,8 +52,8 @@ read-only operation, with every action signed in the audit log.
 
 **Build**
 
-- ☐ `steward-state` — embedded store (`redb`): tokens, revocation list,
-  checkpoints, audit head.
+- ☑ `steward-state` — embedded store (`redb`): tokens, revocation list,
+  checkpoints, audit head. (RFC-0004)
 - ☐ `steward-auth` — Biscuit capability tokens: issue, present, validate,
   attenuate, revoke/expire; lifecycle CLI surface.
 - ☑ `steward-policy` — allow/deny engine: capability superset check, max-risk
