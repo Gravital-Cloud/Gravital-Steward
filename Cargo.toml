@@ -5,6 +5,7 @@ members = [
     "crates/steward-proto",
     "crates/steward-policy",
     "crates/steward-audit",
+    "crates/steward-state",
 ]
 
 [workspace.package]
@@ -28,6 +29,7 @@ async-trait = "0.1"
 blake3 = "1"
 ed25519-dalek = "2"
 hex = "0.4"
+redb = "2"
 
 # First-party crates referenced across the workspace.
 steward-core = { path = "crates/steward-core" }
