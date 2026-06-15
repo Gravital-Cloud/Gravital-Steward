@@ -22,3 +22,4 @@ decision, an RFC describes the design of a concrete unit of work end to end.
 | [0002](RFC-0002-steward-policy.md) | `steward-policy`: the allow/deny engine | Accepted |
 | [0003](RFC-0003-steward-audit.md) | `steward-audit`: append-only, hash-chained, signed log | Accepted |
 | [0004](RFC-0004-steward-state.md) | `steward-state`: embedded durable state store | Accepted |
+| [0005](RFC-0005-steward-auth.md) | `steward-auth`: Biscuit capability tokens | Accepted |
