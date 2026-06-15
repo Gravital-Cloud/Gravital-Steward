@@ -14,6 +14,10 @@ readme.workspace = true
 steward-core = { workspace = true }
 steward-policy = { workspace = true }
 thiserror = { workspace = true }
+# Note: biscuit-auth 6.0 cannot build with `datalog-macro` disabled (an upstream
+# bug imports `ToAnyParam` unconditionally), so we keep default features. That
+# pulls the unmaintained `proc-macro-error2` transitively; see the documented
+# advisory ignore in deny.toml and the tracking issue.
 biscuit-auth = "6"
 
 [lints]
