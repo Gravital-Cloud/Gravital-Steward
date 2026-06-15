@@ -52,14 +52,14 @@ read-only operation, with every action signed in the audit log.
 
 **Build**
 
-- ☐ `steward-state` — embedded store (`redb`): tokens, revocation list,
-  checkpoints, audit head.
+- ☑ `steward-state` — embedded store (`redb`): tokens, revocation list,
+  checkpoints, audit head. (RFC-0004)
 - ☐ `steward-auth` — Biscuit capability tokens: issue, present, validate,
   attenuate, revoke/expire; lifecycle CLI surface.
-- ☐ `steward-policy` — allow/deny engine: capability superset check, max-risk
-  check, explicit denies, fail-closed default.
-- ☐ `steward-audit` — append-only, BLAKE3 hash-chained, Ed25519-signed log;
-  `audit verify`.
+- ☑ `steward-policy` — allow/deny engine: capability superset check, max-risk
+  check, explicit denies, fail-closed default. (RFC-0002)
+- ☑ `steward-audit` — append-only, BLAKE3 hash-chained, Ed25519-signed log;
+  `audit verify`. (RFC-0003)
 - ☐ `steward-mcp` — Streamable HTTP, JSON-RPC 2.0, stateless design; OAuth 2.1
   resource server (audience RFC 8707, metadata RFC 8414, `iss` RFC 9207, DCR
   RFC 7591); 401 on invalid token.
